@@ -1,4 +1,4 @@
-use ash::{ext::debug_utils, vk::DebugUtilsMessengerEXT, Entry, Instance};
+use ash::{ext::debug_utils, vk::{DebugUtilsMessengerEXT, PhysicalDevice}, Device, Entry, Instance};
 use instance::{create_instance, load_vulkan_library};
 use winit::window::Window;
 
