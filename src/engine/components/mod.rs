@@ -1,4 +1,4 @@
-use ash::vk::{ImageView};
+use ash::vk::{Extent2D, ImageView, Pipeline};
 use ash::{Device, Instance};
 use ash::{
     ext::debug_utils,
@@ -15,6 +15,7 @@ mod instance;
 mod swapchain;
 mod swapchain_support_details;
 mod pipeline;
+mod util;
 
 #[derive(Default, Clone, Copy)]
 pub struct QueueFamilyIndices {
@@ -137,4 +138,8 @@ pub fn create_image_views(
         },
         Err(_) => panic!("failed to get image views")
     }
+}
+
+pub fn create_graphics_pipelines(device: &Device, extent: &Extent2D) -> Vec<Pipeline> {
+    pipeline::create_graphics_pipeline(device, extent).unwrap()
 }
