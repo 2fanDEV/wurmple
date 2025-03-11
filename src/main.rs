@@ -10,5 +10,4 @@ fn main() {
         .try_init();
     let mut app = App::new();
     let _ = EventLoop::new().unwrap().run_app(&mut app);
-
 }

@@ -98,7 +98,7 @@ pub fn create_instance(entry: &Entry, window: &Window) -> Result<Instance, Error
         .pfn_user_callback(Some(debug_callback));
 
     if enabled_layer_support {
-        instance_create_info.push_next(&mut debug_create_info);
+        instance_create_info = instance_create_info.push_next(&mut debug_create_info);
     }
 
     let instance = unsafe { entry.create_instance(&instance_create_info, None).unwrap() };
