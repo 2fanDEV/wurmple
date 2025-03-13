@@ -3,6 +3,7 @@ use std::io::Error;
 use configuration::VkConfiguration;
 use winit::window::Window;
 mod configuration;
+mod data;
 mod components;
 
 pub struct Engine {

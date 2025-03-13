@@ -3,17 +3,11 @@ use std::io::Error;
 use ash::{
     util::read_spv,
     vk::{
-        BlendFactor, BlendOp, ColorComponentFlags, CullModeFlags, DynamicState, Extent2D,
-        FrontFace, GraphicsPipelineCreateInfo, LogicOp, Offset2D, Pipeline, PipelineCache,
-        PipelineColorBlendAttachmentState, PipelineColorBlendStateCreateInfo,
-        PipelineDynamicStateCreateInfo, PipelineInputAssemblyStateCreateInfo,
-        PipelineLayoutCreateInfo, PipelineMultisampleStateCreateInfo,
-        PipelineRasterizationStateCreateInfo, PipelineVertexInputStateCreateInfo,
-        PipelineViewportStateCreateInfo, PolygonMode, PrimitiveTopology, Rect2D, SampleCountFlags,
-        ShaderModule, ShaderModuleCreateInfo, Viewport,
+        BlendFactor, BlendOp, ColorComponentFlags, CullModeFlags, DynamicState, Extent2D, FrontFace, GraphicsPipelineCreateInfo, LogicOp, Offset2D, Pipeline, PipelineCache, PipelineColorBlendAttachmentState, PipelineColorBlendStateCreateInfo, PipelineDynamicStateCreateInfo, PipelineInputAssemblyStateCreateInfo, PipelineLayoutCreateInfo, PipelineMultisampleStateCreateInfo, PipelineRasterizationStateCreateInfo, PipelineShaderStageCreateFlags, PipelineShaderStageCreateInfo, PipelineVertexInputStateCreateInfo, PipelineViewportStateCreateInfo, PolygonMode, PrimitiveTopology, Rect2D, RenderPass, SampleCountFlags, ShaderModule, ShaderModuleCreateFlags, ShaderModuleCreateInfo, ShaderStageFlags, Viewport
     },
     Device,
 };
+use log::debug;
 
 use super::util::read_file_as_cursor;
 
@@ -25,10 +19,13 @@ pub fn load_shader_module(file_path: &str, device: &Device) -> Result<ShaderModu
 
 pub fn create_graphics_pipeline(
     device: &Device,
+    render_pass: &RenderPass,
     extent: &Extent2D,
 ) -> Result<Vec<Pipeline>, Error> {
     let dynamic_states_create_info =
         dynamic_states(&[DynamicState::VIEWPORT, DynamicState::SCISSOR]);
+    let shader_module = load_shader_module("shaders/shader.spv", device).unwrap();
+    let shader_stage_create_info = vec![PipelineShaderStageCreateInfo::default().name(c"main").module(shader_module).stage(ShaderStageFlags::ALL)];
     let vertex_input_state = PipelineVertexInputStateCreateInfo::default();
     let input_assembly_state = PipelineInputAssemblyStateCreateInfo::default()
         .topology(PrimitiveTopology::TRIANGLE_LIST)
@@ -47,6 +44,7 @@ pub fn create_graphics_pipeline(
     };
     let color_blending_state_info = create_color_blending_state(&color_blending_attachments);
     let graphics_pipeline_create_info = GraphicsPipelineCreateInfo::default()
+        .stages(&shader_stage_create_info)
         .dynamic_state(&dynamic_states_create_info)
         .input_assembly_state(&input_assembly_state)
         .vertex_input_state(&vertex_input_state)
@@ -55,13 +53,15 @@ pub fn create_graphics_pipeline(
         .multisample_state(&multisamping_info)
         .rasterization_state(&rasterizer_info)
         .layout(pipeline_layout)
-        .subpass(0);
-    //       .render_pass(render_pass)
-    //       .depth_stencil_state(depth_stencil_state);
+        .subpass(0)
+        .render_pass(*render_pass)
+        .base_pipeline_index(-1)
+        .base_pipeline_handle(Pipeline::null());
+//        .depth_stencil_state(depth_stencil_state);
     Ok(unsafe {
         device
             .create_graphics_pipelines(
-                PipelineCache::null(),
+                PipelineCache::default(),
                 &[graphics_pipeline_create_info],
                 None,
             )

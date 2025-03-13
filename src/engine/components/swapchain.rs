@@ -3,9 +3,7 @@ use std::io::Error;
 use ash::{
     khr::{surface, swapchain},
     vk::{
-        ComponentMapping, ComponentSwizzle, CompositeAlphaFlagsKHR, ImageAspectFlags,
-        ImageSubresourceRange, ImageUsageFlags, ImageView, ImageViewCreateInfo, PhysicalDevice,
-        SharingMode, SurfaceKHR, SwapchainCreateInfoKHR, SwapchainKHR,
+        ComponentMapping, ComponentSwizzle, CompositeAlphaFlagsKHR, ImageAspectFlags, ImageSubresourceRange, ImageUsageFlags, ImageView, ImageViewCreateInfo, ImageViewType, PhysicalDevice, SharingMode, SurfaceKHR, SwapchainCreateInfoKHR, SwapchainKHR
     },
     Device, Instance,
 };
@@ -71,7 +69,7 @@ pub fn create_swapchain(
 pub fn create_image_views(
     device: &Device,
     swapchain_device: &ash::khr::swapchain::Device,
-    swapchain_support_details: SwapchainSupportDetails,
+    swapchain_support_details: &SwapchainSupportDetails,
     swapchain: SwapchainKHR,
 ) -> Result<Vec<ImageView>, Error> {
     let mut image_views = vec![];
@@ -79,7 +77,13 @@ pub fn create_image_views(
     for image in images {
         let image_view_create_info = ImageViewCreateInfo::default()
             .image(image)
-            .format(swapchain_support_details.clone().choose_swapchain_format().format)
+            .view_type(ImageViewType::TYPE_2D)
+            .format(
+                swapchain_support_details
+                    .clone()
+                    .choose_swapchain_format()
+                    .format,
+            )
             .components(
                 ComponentMapping::default()
                     .r(ComponentSwizzle::IDENTITY)
@@ -94,7 +98,7 @@ pub fn create_image_views(
                     .level_count(1)
                     .base_array_layer(0)
                     .layer_count(1),
-            ); 
+            );
         let image_view = unsafe {
             device
                 .create_image_view(&image_view_create_info, None)

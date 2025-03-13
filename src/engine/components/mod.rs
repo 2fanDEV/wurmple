@@ -1,20 +1,23 @@
-use ash::vk::{Extent2D, ImageView, Pipeline};
-use ash::{Device, Instance};
+use ash::vk::{Extent2D, Format, ImageView, Pipeline, RenderPass};
 use ash::{
     ext::debug_utils,
-    khr::{surface},
+    khr::surface,
     vk::{DebugUtilsMessengerEXT, PhysicalDevice, QueueFlags, SurfaceKHR, SwapchainKHR},
     Entry,
 };
+use ash::{Device, Instance};
 use instance::{create_instance, load_vulkan_library};
+use renderpass::allocate_render_pass;
 use swapchain_support_details::SwapchainSupportDetails;
 use winit::window::Window;
 
 mod device;
 mod instance;
+mod pipeline;
+mod renderpass;
 mod swapchain;
 mod swapchain_support_details;
-mod pipeline;
+mod command_buffers;
 mod util;
 
 #[derive(Default, Clone, Copy)]
@@ -114,17 +117,22 @@ pub fn create_swapchain(
     }
 }
 
-pub fn get_swapchain_support_details(physical_device: PhysicalDevice, instance: &surface::Instance, surface: SurfaceKHR) -> SwapchainSupportDetails {
-    SwapchainSupportDetails::get_swapchain_support_details(physical_device, instance, surface).unwrap()
+pub fn get_swapchain_support_details(
+    physical_device: PhysicalDevice,
+    instance: &surface::Instance,
+    surface: SurfaceKHR,
+) -> SwapchainSupportDetails {
+    SwapchainSupportDetails::get_swapchain_support_details(physical_device, instance, surface)
+        .unwrap()
 }
 
 pub fn create_image_views(
     device: &Device,
-    swapchain_device: &ash::khr::swapchain::Device ,
-    swapchain_support_details: SwapchainSupportDetails,
+    swapchain_device: &ash::khr::swapchain::Device,
+    swapchain_support_details: &SwapchainSupportDetails,
     swapchain: SwapchainKHR,
 ) -> Vec<ImageView> {
-  match swapchain::create_image_views(
+    match swapchain::create_image_views(
         device,
         swapchain_device,
         swapchain_support_details,
@@ -135,11 +143,19 @@ pub fn create_image_views(
                 panic!("failed to get image views");
             }
             return image_views;
-        },
-        Err(_) => panic!("failed to get image views")
+        }
+        Err(_) => panic!("failed to get image views"),
     }
 }
 
-pub fn create_graphics_pipelines(device: &Device, extent: &Extent2D) -> Vec<Pipeline> {
-    pipeline::create_graphics_pipeline(device, extent).unwrap()
+pub fn create_graphics_pipelines(
+    device: &Device,
+    render_pass: &RenderPass,
+    extent: &Extent2D,
+) -> Vec<Pipeline> {
+    pipeline::create_graphics_pipeline(device, render_pass, extent).unwrap()
+}
+
+pub fn create_render_pass(device: &Device, format: &Format) -> RenderPass {
+    renderpass::allocate_render_pass(&device, format).unwrap()
 }
