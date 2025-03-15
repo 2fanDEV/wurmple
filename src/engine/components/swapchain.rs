@@ -3,7 +3,7 @@ use std::io::Error;
 use ash::{
     khr::{surface, swapchain},
     vk::{
-        ComponentMapping, ComponentSwizzle, CompositeAlphaFlagsKHR, ImageAspectFlags, ImageSubresourceRange, ImageUsageFlags, ImageView, ImageViewCreateInfo, ImageViewType, PhysicalDevice, SharingMode, SurfaceKHR, SwapchainCreateInfoKHR, SwapchainKHR
+        ComponentMapping, ComponentSwizzle, CompositeAlphaFlagsKHR, Image, ImageAspectFlags, ImageSubresourceRange, ImageUsageFlags, ImageView, ImageViewCreateInfo, ImageViewType, PhysicalDevice, SharingMode, SurfaceKHR, SwapchainCreateInfoKHR, SwapchainKHR
     },
     Device, Instance,
 };
@@ -71,12 +71,12 @@ pub fn create_image_views(
     swapchain_device: &ash::khr::swapchain::Device,
     swapchain_support_details: &SwapchainSupportDetails,
     swapchain: SwapchainKHR,
-) -> Result<Vec<ImageView>, Error> {
+) -> Result<(Vec<Image>, Vec<ImageView>), Error> {
     let mut image_views = vec![];
     let images = unsafe { swapchain_device.get_swapchain_images(swapchain).unwrap() };
-    for image in images {
+    for image in &images {
         let image_view_create_info = ImageViewCreateInfo::default()
-            .image(image)
+            .image(*image)
             .view_type(ImageViewType::TYPE_2D)
             .format(
                 swapchain_support_details
@@ -106,5 +106,5 @@ pub fn create_image_views(
         };
         image_views.push(image_view);
     }
-    Ok(image_views)
+    Ok((images, image_views))
 }

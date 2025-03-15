@@ -2,8 +2,7 @@ use ash::{
     ext::debug_utils,
     khr::{surface, swapchain},
     vk::{
-        DebugUtilsMessengerEXT, ImageView, PhysicalDevice, Pipeline, Queue, RenderPass, SurfaceKHR,
-        SwapchainKHR,
+        DebugUtilsMessengerEXT, Extent2D, Image, ImageView, PhysicalDevice, Queue, SurfaceKHR, SwapchainKHR
     },
     Device, Entry, Instance,
 };
@@ -13,9 +12,9 @@ use winit::{
 };
 
 use super::components::{
-    create_debugger, create_device, create_entry_and_instance, create_graphics_pipelines,
-    create_image_views, create_render_pass, create_swapchain, get_queue_family_indices,
-    get_swapchain_support_details, QueueFamilyIndices,
+     create_debugger, create_device, create_entry_and_instance,
+    create_image_views, create_swapchain,
+    get_queue_family_indices, get_swapchain_support_details, QueueFamilyIndices, SwapchainSupportDetail,
 };
 
 pub struct VkConfiguration {
@@ -25,15 +24,18 @@ pub struct VkConfiguration {
     debug_instance: debug_utils::Instance,
     debugger: DebugUtilsMessengerEXT,
     physical_device: PhysicalDevice,
-    device: Device,
-    indices: QueueFamilyIndices,
-    graphics_queue: Queue,
+    pub device: Device,
+    pub indices: QueueFamilyIndices,
+    pub graphics_queue: Queue,
     surface_instance: surface::Instance,
-    swapchain_device: swapchain::Device,
-    swapchain: SwapchainKHR,
-    image_views: Vec<ImageView>,
-//    graphics_pipelines: Vec<Pipeline>,
- //   render_pass: RenderPass,
+    pub swapchain_device: swapchain::Device,
+    swapchain_support_details: SwapchainSupportDetail,
+    extent: Extent2D,
+    pub swapchain: SwapchainKHR,
+    pub images: Vec<Image>,
+    pub image_views: Vec<ImageView>,
+    //    graphics_pipelines: Vec<Pipeline>,
+    //   render_pass: RenderPass,
 }
 
 impl VkConfiguration {
@@ -70,18 +72,18 @@ impl VkConfiguration {
             window,
             indices,
         );
-        let image_views = create_image_views(
+        let (images, image_views) = create_image_views(
             &device,
             &swapchain_device,
             &swapchain_support_details,
             swapchain,
         );
-   /*    let render_pass = create_render_pass(
-            &device,
-            &swapchain_support_details.choose_swapchain_format().format,
-        );
-       let graphics_pipelines = create_graphics_pipelines(&device, &render_pass, &extent);
-   */
+        /*    let render_pass = create_render_pass(
+                 &device,
+                 &swapchain_support_details.choose_swapchain_format().format,
+             );
+            let graphics_pipelines = create_graphics_pipelines(&device, &render_pass, &extent);
+        */
         Self {
             entry,
             instance,
@@ -94,10 +96,13 @@ impl VkConfiguration {
             graphics_queue,
             surface_instance,
             swapchain_device,
+            swapchain_support_details,
+            extent,
             swapchain,
+            images,
             image_views,
-         //   graphics_pipelines,
-          //  render_pass,
+            //   graphics_pipelines,
+            //  render_pass,
         }
     }
 

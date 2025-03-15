@@ -29,6 +29,7 @@ impl ApplicationHandler for App {
         window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
+        self.engine.as_mut().unwrap().draw();
     }
 }
 

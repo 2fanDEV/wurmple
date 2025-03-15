@@ -1,4 +1,4 @@
-use ash::vk::{Extent2D, Format, ImageView, Pipeline, RenderPass};
+use ash::vk::{CommandBuffer, CommandPool, Extent2D, Format, Image, ImageView, Pipeline, RenderPass};
 use ash::{
     ext::debug_utils,
     khr::surface,
@@ -7,7 +7,6 @@ use ash::{
 };
 use ash::{Device, Instance};
 use instance::{create_instance, load_vulkan_library};
-use renderpass::allocate_render_pass;
 use swapchain_support_details::SwapchainSupportDetails;
 use winit::window::Window;
 
@@ -17,8 +16,9 @@ mod pipeline;
 mod renderpass;
 mod swapchain;
 mod swapchain_support_details;
-mod command_buffers;
 mod util;
+
+pub type SwapchainSupportDetail = SwapchainSupportDetails;
 
 #[derive(Default, Clone, Copy)]
 pub struct QueueFamilyIndices {
@@ -131,7 +131,7 @@ pub fn create_image_views(
     swapchain_device: &ash::khr::swapchain::Device,
     swapchain_support_details: &SwapchainSupportDetails,
     swapchain: SwapchainKHR,
-) -> Vec<ImageView> {
+) -> (Vec<Image>, Vec<ImageView>) {
     match swapchain::create_image_views(
         device,
         swapchain_device,
@@ -139,7 +139,7 @@ pub fn create_image_views(
         swapchain,
     ) {
         Ok(image_views) => {
-            if image_views.len() == 0 {
+            if image_views.1.len() == 0 {
                 panic!("failed to get image views");
             }
             return image_views;
