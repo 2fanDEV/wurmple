@@ -8,6 +8,7 @@ use ash::{
     Device, Instance,
 };
 use log::{debug, error};
+use winit::window::Window;
 
 use super::{swapchain_support_details::SwapchainSupportDetails, QueueFamilyIndices};
 
@@ -15,8 +16,9 @@ pub fn create_device(
     instance: &Instance,
     surface_instance: &surface::Instance,
     surface: SurfaceKHR,
+    window: &Window
 ) -> (Option<PhysicalDevice>, Option<ash::Device>) {
-    let physical_device = pick_physical_device(instance, surface_instance, surface);
+    let physical_device = pick_physical_device(instance, surface_instance, surface, window);
     match physical_device {
         Some(physical_device) => {
             let indices = QueueFamilyIndices::find_queue_family_indices(
@@ -54,12 +56,13 @@ fn pick_physical_device(
     instance: &Instance,
     surface_instance: &surface::Instance,
     surface: SurfaceKHR,
+    window: &Window
 ) -> Option<PhysicalDevice> {
     match unsafe { instance.enumerate_physical_devices() } {
         Ok(devices) => {
             devices
                 .into_iter()
-                .filter(|device| is_device_suitable(*device, instance, &surface_instance, surface))
+                .filter(|device| is_device_suitable(*device, instance, &surface_instance, surface, window))
                 .collect::<Vec<PhysicalDevice>>()
                 .first()
                 .map(|dev| dev.to_owned()) // we want an owned value to return
@@ -102,13 +105,14 @@ fn is_device_suitable(
     instance: &Instance,
     surface_instance: &surface::Instance,
     surface: SurfaceKHR,
+    window: &Window
 ) -> bool {
     let queue_family_indices =
         QueueFamilyIndices::find_queue_family_indices(device, instance, surface_instance, surface);
     let features = unsafe { instance.get_physical_device_features(device) };
 		let properties = unsafe { instance.get_physical_device_properties(device) };
     let swapchain_support_details =
-        SwapchainSupportDetails::get_swapchain_support_details(device, surface_instance, surface)
+        SwapchainSupportDetails::get_swapchain_support_details(device, surface_instance, surface, window)
             .unwrap();
     queue_family_indices.is_complete()
         && check_device_extensions(device, instance)

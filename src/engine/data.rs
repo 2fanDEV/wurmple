@@ -1,7 +1,6 @@
-use ash::{
-    vk::{CommandBuffer, CommandPool, Fence, Semaphore},
-    Device,
-};
+use ash::vk::{CommandBuffer, CommandPool, Fence, Semaphore};
+
+use super::deletion_queue::DeletionQueue;
 
 pub struct FrameData {
     pub command_pool: CommandPool,
@@ -9,6 +8,7 @@ pub struct FrameData {
     pub swapchain_semaphore: Semaphore,
     pub render_semaphore: Semaphore,
     pub render_fence: Fence,
+    pub deletion_queue: DeletionQueue
 }
 
 impl FrameData {
@@ -25,6 +25,7 @@ impl FrameData {
             swapchain_semaphore,
             render_semaphore,
             render_fence,
+            deletion_queue: DeletionQueue::new()
         }
     }
 }

@@ -1,4 +1,6 @@
-use ash::vk::{CommandBuffer, CommandPool, Extent2D, Format, Image, ImageView, Pipeline, RenderPass};
+use std::sync::Arc;
+
+use ash::vk::{Extent2D, Format, Image, ImageView, Pipeline, RenderPass};
 use ash::{
     ext::debug_utils,
     khr::surface,
@@ -7,8 +9,11 @@ use ash::{
 };
 use ash::{Device, Instance};
 use instance::{create_instance, load_vulkan_library};
+use swapchain::create_swapchain_image_and_views;
 use swapchain_support_details::SwapchainSupportDetails;
 use winit::window::Window;
+
+use super::allocated_image::AllocatedImage;
 
 mod device;
 mod instance;
@@ -78,8 +83,9 @@ pub fn create_device(
     instance: &Instance,
     surface_instance: &surface::Instance,
     surface: SurfaceKHR,
+    window: &Window
 ) -> (PhysicalDevice, ash::Device) {
-    let res = device::create_device(instance, &surface_instance, surface);
+    let res = device::create_device(instance, &surface_instance, surface, window);
     match res.0 {
         Some(physical_device) => match res.1 {
             Some(device) => (physical_device, device),
@@ -121,31 +127,37 @@ pub fn get_swapchain_support_details(
     physical_device: PhysicalDevice,
     instance: &surface::Instance,
     surface: SurfaceKHR,
+    window: &Window,
 ) -> SwapchainSupportDetails {
-    SwapchainSupportDetails::get_swapchain_support_details(physical_device, instance, surface)
+    SwapchainSupportDetails::get_swapchain_support_details(physical_device, instance, surface, window)
         .unwrap()
 }
 
-pub fn create_image_views(
+pub fn create_allocated_image(
     device: &Device,
     swapchain_device: &ash::khr::swapchain::Device,
     swapchain_support_details: &SwapchainSupportDetails,
     swapchain: SwapchainKHR,
-) -> (Vec<Image>, Vec<ImageView>) {
-    match swapchain::create_image_views(
+    vma_allocator: Arc<vk_mem::Allocator>
+) -> AllocatedImage {
+    match swapchain::create_allocated_image(
         device,
         swapchain_device,
         swapchain_support_details,
         swapchain,
+        vma_allocator
     ) {
-        Ok(image_views) => {
-            if image_views.1.len() == 0 {
-                panic!("failed to get image views");
-            }
-            return image_views;
+        Ok(allocated_image) => {
+            return allocated_image;
         }
         Err(_) => panic!("failed to get image views"),
     }
+}
+
+pub fn create_image_views(device: &Device, swapchain_device: &ash::khr::swapchain::Device,
+    swapchain_support_details: SwapchainSupportDetails,
+    swapchain: SwapchainKHR) -> (Vec<Image>, Vec<ImageView>){
+    create_swapchain_image_and_views(device, swapchain_device, swapchain_support_details, swapchain).unwrap()
 }
 
 pub fn create_graphics_pipelines(

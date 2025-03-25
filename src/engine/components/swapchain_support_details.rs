@@ -8,6 +8,7 @@ use ash::{
     },
 };
 use log::debug;
+use muda::dpi::{PhysicalSize, Size};
 use winit::window::Window;
 
 #[derive(Default, Clone)]
@@ -15,6 +16,7 @@ pub struct SwapchainSupportDetails {
     pub capabilities: SurfaceCapabilitiesKHR,
     formats: Vec<SurfaceFormatKHR>,
     present_modes: Vec<PresentModeKHR>,
+    pub window_sizes: PhysicalSize<u32>
 }
 
 impl SwapchainSupportDetails {
@@ -22,6 +24,7 @@ impl SwapchainSupportDetails {
         physical_device: PhysicalDevice,
         instance: &surface::Instance,
         surface: SurfaceKHR,
+        window: &Window
     ) -> Result<SwapchainSupportDetails, Error> {
         let surface_capabilities = unsafe {
             instance
@@ -39,10 +42,12 @@ impl SwapchainSupportDetails {
                 .unwrap()
         };
 
+        let window_sizes = window.inner_size();
         Ok(Self {
             capabilities: surface_capabilities,
             formats,
             present_modes,
+            window_sizes
         })
     }
 
