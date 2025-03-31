@@ -1,2 +1,3 @@
-mod app;
-mod engine;
+pub mod app;
+pub mod engine;
+pub mod egui_renderer;

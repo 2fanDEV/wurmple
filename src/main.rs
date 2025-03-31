@@ -1,8 +1,6 @@
-use app::App;
+use wurmple::app::App;
 use log::LevelFilter;
 use winit::event_loop::EventLoop;
-mod app;
-mod engine;
 fn main() {
     println!("Hello, world!");
     let _ = env_logger::Builder::new()

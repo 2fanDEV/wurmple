@@ -1,8 +1,10 @@
-use muda::dpi::PhysicalSize;
-use winit::{application::ApplicationHandler, window::{Window, WindowAttributes}};
+use muda::{dpi::PhysicalSize, Menu, PredefinedMenuItem};
+use winit::{
+    application::ApplicationHandler,
+    window::{Window, WindowAttributes},
+};
 
-use crate::engine::Engine;
-
+use crate::{egui_renderer::EGUIRenderer, engine::Engine};
 
 pub struct App {
     window: Option<Window>,
@@ -11,16 +13,29 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        Self { window: None, 
-        engine: None}
+        Self {
+            window: None,
+            engine: None,
+            egui_renderer: None,
+        }
     }
 }
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        let window_attributes = WindowAttributes::default().with_inner_size(PhysicalSize::new(1080.0, 720.0)); 
+        let window_attributes =
+            WindowAttributes::default().with_inner_size(PhysicalSize::new(1280.0, 720.0));
         self.window = event_loop.create_window(window_attributes).ok();
         self.engine = Engine::new(self.window.as_mut().unwrap()).ok();
+        let menu = Menu::new();
+        menu.append_items(&[
+            &PredefinedMenuItem::about(None, None),
+            &PredefinedMenuItem::separator(),
+            &PredefinedMenuItem::services(None),
+            &PredefinedMenuItem::hide(None),
+            &PredefinedMenuItem::undo(Some("")),
+        ])
+        .unwrap();
     }
 
     fn window_event(
@@ -32,4 +47,3 @@ impl ApplicationHandler for App {
         self.engine.as_mut().unwrap().draw();
     }
 }
-

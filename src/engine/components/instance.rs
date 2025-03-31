@@ -1,6 +1,6 @@
 use std::{
     env,
-    ffi::{c_void, CStr},
+    ffi::c_void,
     fmt::Error,
     ops::Add,
 };
@@ -18,12 +18,11 @@ use ash::{
 use log::{debug, error, info, warn};
 use winit::{raw_window_handle::HasDisplayHandle, window::Window};
 
-use crate::engine::components::instance;
 
 pub fn load_vulkan_library() -> Result<Entry, Error> {
     #[cfg(target_os = "macos")]
     let entry_path = env::home_dir().unwrap().to_str().unwrap().to_owned()
-        + "/VulkanSDK/1.4.304.1/macOS/lib/libvulkan.dylib";
+        + "/VulkanSDK/1.4.309.0/macOS/lib/libvulkan.dylib";
     Ok(unsafe { Entry::load_from(entry_path).unwrap() })
 }
 

@@ -1,14 +1,14 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 
 use ash::{
     ext::debug_utils,
     khr::{surface, swapchain},
     vk::{
-        DebugUtilsMessengerEXT, Extent2D, Image, ImageView, PhysicalDevice, Queue, SurfaceKHR,
-        SwapchainKHR,
+        DebugUtilsMessengerEXT, DescriptorSet, DescriptorSetLayout, Extent2D, Image, ImageView, PhysicalDevice, Pipeline, PipelineLayout, Queue, SurfaceKHR, SwapchainKHR
     },
     Device, Entry, Instance,
 };
+use log::debug;
 use vk_mem::Allocator;
 use winit::{
     raw_window_handle::{HasDisplayHandle, HasWindowHandle},
@@ -18,11 +18,9 @@ use winit::{
 use super::{
     allocated_image::AllocatedImage,
     components::{
-        create_allocated_image, create_debugger, create_device, create_entry_and_instance,
-        create_image_views, create_swapchain, get_queue_family_indices,
-        get_swapchain_support_details, QueueFamilyIndices, SwapchainSupportDetail,
+        compute_pipeline, create_allocated_image, create_debugger, create_device, create_entry_and_instance, create_image_views, create_swapchain, get_queue_family_indices, get_swapchain_support_details, init_descriptors, DescriptorAllocato, QueueFamilyIndices, SwapchainSupportDetail
     },
-    deletion_queue::DeletionQueue,
+    deletion_queue::DeletionQueue
 };
 
 pub const MAX_FRAMES: u32 = 2;
@@ -30,13 +28,13 @@ pub const MAX_FRAMES: u32 = 2;
 pub struct VkConfiguration {
     entry: Entry,
     pub instance: Instance,
-    pub surface: SurfaceKHR,
+    pub surface: Arc<SurfaceKHR>,
     pub debug_instance: debug_utils::Instance,
     pub debugger: DebugUtilsMessengerEXT,
     pub physical_device: PhysicalDevice,
     pub device: Arc<Device>,
     pub indices: QueueFamilyIndices,
-    pub graphics_queue: Queue,
+    pub graphics_queue: Arc<Queue>,
     pub surface_instance: surface::Instance,
     pub swapchain_device: swapchain::Device,
     pub swapchain_support_details: SwapchainSupportDetail,
@@ -46,8 +44,13 @@ pub struct VkConfiguration {
     pub images: Vec<Image>,
     pub image_views: Vec<ImageView>,
     pub main_deletion_queue: DeletionQueue,
-    pub vma_allocator: Arc<Allocator>, //    graphics_pipelines: Vec<Pipeline>,
-                                       //   render_pass: RenderPass,
+    pub vma_allocator: Arc<Allocator>,
+    pub descriptor_allocator: Arc<DescriptorAllocato>,
+    pub descriptor_set_layout: DescriptorSetLayout,
+    pub descriptor_set: DescriptorSet,
+    pub compute_pipeline: Pipeline,
+    pub compute_pipeline_layout: PipelineLayout,
+    //graphics_pipelines: Vec<Pipeline>, render_pass: RenderPass,
 }
 
 #[allow(dead_code)]
@@ -113,22 +116,29 @@ impl VkConfiguration {
             device_arc.clone(),
             allocated_image.clone(),
         );
+
+        debug!("SHIT AINT MAKIN SENSE");
+        let (descriptor_allocator, descriptor_set_layout, descriptor_set) =
+            init_descriptors(device_arc.clone(), allocated_image.clone(), &mut main_deletion_queue);
         /*    let render_pass = create_render_pass(
                  &device,
                  &swapchain_support_details.choose_swapchain_format().format,
              );
             let graphics_pipelines = create_graphics_pipelines(&device, &render_pass, &extent);
         */
+        debug!("SHIT AINT MAKIN SENSE2");
+        let (compute_pipeline_layout, compute_pipeline) = compute_pipeline(device_arc.clone(), &[descriptor_set_layout], &mut main_deletion_queue);
+
         Self {
             entry,
             instance,
-            surface,
+            surface: Arc::new(surface),
             debug_instance,
             debugger,
             physical_device,
             device: device_arc.clone(),
             indices,
-            graphics_queue,
+            graphics_queue: Arc::new(graphics_queue),
             surface_instance,
             swapchain_device,
             swapchain_support_details,
@@ -138,8 +148,14 @@ impl VkConfiguration {
             main_deletion_queue,
             vma_allocator,
             images,
-            image_views, //   graphics_pipelines,
-                         //  render_pass,
+            image_views,
+            descriptor_allocator,
+            descriptor_set_layout,
+            descriptor_set,
+            compute_pipeline,
+            compute_pipeline_layout
+            //   graphics_pipelines,
+            //  render_pass,
         }
     }
 
@@ -163,7 +179,7 @@ impl VkConfiguration {
             self.swapchain_device
                 .destroy_swapchain(self.swapchain, None);
             device.destroy_device(None);
-            self.surface_instance.destroy_surface(self.surface, None);
+            self.surface_instance.destroy_surface(*self.surface, None);
             self.debug_instance
                 .destroy_debug_utils_messenger(self.debugger, None);
             self.instance.destroy_instance(None);

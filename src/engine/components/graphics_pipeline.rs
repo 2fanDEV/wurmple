@@ -1,30 +1,22 @@
-use std::io::Error;
+use std::{io::Error, sync::Arc};
 
 use ash::{
-    util::read_spv,
     vk::{
         BlendFactor, BlendOp, ColorComponentFlags, CullModeFlags, DynamicState, Extent2D, FrontFace, GraphicsPipelineCreateInfo, LogicOp, Offset2D, Pipeline, PipelineCache, PipelineColorBlendAttachmentState, PipelineColorBlendStateCreateInfo, PipelineDynamicStateCreateInfo, PipelineInputAssemblyStateCreateInfo, PipelineLayoutCreateInfo, PipelineMultisampleStateCreateInfo, PipelineRasterizationStateCreateInfo, PipelineShaderStageCreateFlags, PipelineShaderStageCreateInfo, PipelineVertexInputStateCreateInfo, PipelineViewportStateCreateInfo, PolygonMode, PrimitiveTopology, Rect2D, RenderPass, SampleCountFlags, ShaderModule, ShaderModuleCreateFlags, ShaderModuleCreateInfo, ShaderStageFlags, Viewport
     },
     Device,
 };
-use log::debug;
 
-use super::util::read_file_as_cursor;
-
-pub fn load_shader_module(file_path: &str, device: &Device) -> Result<ShaderModule, Error> {
-    let code = read_spv(&mut read_file_as_cursor(file_path)).unwrap();
-    let create_info = ShaderModuleCreateInfo::default().code(&code);
-    Ok(unsafe { device.create_shader_module(&create_info, None).unwrap() })
-}
+use super::util::load_shader_module;
 
 pub fn create_graphics_pipeline(
-    device: &Device,
+    device: Arc<Device>,
     render_pass: &RenderPass,
     extent: &Extent2D,
 ) -> Result<Vec<Pipeline>, Error> {
     let dynamic_states_create_info =
         dynamic_states(&[DynamicState::VIEWPORT, DynamicState::SCISSOR]);
-    let shader_module = load_shader_module("shaders/shader.spv", device).unwrap();
+    let shader_module = load_shader_module("shaders/shader.spv", device.clone()).unwrap();
     let shader_stage_create_info = vec![PipelineShaderStageCreateInfo::default().name(c"main").module(shader_module).stage(ShaderStageFlags::ALL)];
     let vertex_input_state = PipelineVertexInputStateCreateInfo::default();
     let input_assembly_state = PipelineInputAssemblyStateCreateInfo::default()
@@ -105,7 +97,7 @@ fn create_rasterizer_state<'a>() -> PipelineRasterizationStateCreateInfo<'a> {
         .line_width(1.0)
         .polygon_mode(PolygonMode::FILL)
         .cull_mode(CullModeFlags::BACK)
-        .front_face(FrontFace::CLOCKWISE)
+        .front_face(FrontFace::COUNTER_CLOCKWISE)
         .depth_bias_constant_factor(0.0)
         .depth_bias_slope_factor(0.0)
         .depth_bias_clamp(0.0)

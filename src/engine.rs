@@ -1,8 +1,8 @@
-use std::io::Error;
+use std::{io::Error, sync::Arc};
 
+use allocated_image::AllocatedImage;
 use ash::vk::{
-    ClearColorValue, CommandBuffer, CommandBufferResetFlags, CommandBufferUsageFlags, Extent2D,
-    Fence, Image, ImageAspectFlags, ImageLayout, PipelineStageFlags, PresentInfoKHR, SubmitInfo,
+    CommandBuffer, CommandBufferResetFlags, CommandBufferUsageFlags, Extent2D, Fence, ImageAspectFlags, ImageLayout, PipelineBindPoint, PipelineStageFlags, PresentInfoKHR, Queue, SubmitInfo, SurfaceKHR
 };
 use command_buffers::{allocate_command_buffer, begin_command_buffer, create_command_pool};
 use configuration::{VkConfiguration, MAX_FRAMES};
@@ -10,6 +10,8 @@ use data::FrameData;
 use image_ops::{image_subresource_range, image_transition};
 use sync_objects::{create_fence, create_semaphore};
 use winit::window::Window;
+
+use crate::egui_renderer::EGUIRenderer;
 mod allocated_image;
 mod command_buffers;
 mod components;
@@ -18,14 +20,13 @@ mod data;
 mod deletion_queue;
 mod image_ops;
 mod sync_objects;
-mod descriptor;
 
 pub struct Engine {
     configuration: VkConfiguration,
     frame_data: Vec<FrameData>,
     current_frame: usize,
+    egui_renderer: EGUIRenderer,
 }
-
 #[allow(dead_code)]
 impl Engine {
     pub fn new(window: &Window) -> Result<Self, Error> {
@@ -50,31 +51,45 @@ impl Engine {
             ));
         }
 
+        let egui_renderer = EGUIRenderer::new(
+            window,
+            configuration.graphics_queue.clone(),
+            configuration.surface.clone()
+        );
         Ok(Self {
             configuration,
             frame_data,
             current_frame,
+            egui_renderer
         })
     }
 
-    fn draw_background(&self, image: Image, command_buffer: CommandBuffer) {
-        let flash = (self.current_frame as f32 / 120.0).sin().abs() * 20.0;
-        let clear_color_value = ClearColorValue {
-            float32: [0.0, 0.0, flash, 1.0],
-        };
-
+    fn draw_background(&self, image: Arc<AllocatedImage>, command_buffer: CommandBuffer) {
         let image_subresource_range =
             image_subresource_range(ImageAspectFlags::COLOR).layer_count(1);
 
         unsafe {
-            self.configuration.device.cmd_clear_color_image(
+            self.configuration.device.cmd_bind_pipeline(
                 command_buffer,
-                image,
-                ImageLayout::GENERAL,
-                &clear_color_value,
-                &[image_subresource_range],
-            )
-        };
+                PipelineBindPoint::COMPUTE,
+                self.configuration.compute_pipeline,
+            );
+            self.configuration.device.cmd_bind_descriptor_sets(
+                command_buffer,
+                PipelineBindPoint::COMPUTE,
+                self.configuration.compute_pipeline_layout,
+                0,
+                &[self.configuration.descriptor_set],
+                &[],
+            );
+
+            self.configuration.device.cmd_dispatch(
+                command_buffer,
+                image.extent.width.div_ceil(16),
+                image.extent.height.div_ceil(16),
+                1,
+            );
+        }
     }
 
     pub fn draw(&mut self) {
@@ -124,7 +139,7 @@ impl Engine {
                 ImageLayout::GENERAL,
             );
 
-            self.draw_background(allocated_image, command_buffer);
+            self.draw_background(self.configuration.allocated_image.clone(), command_buffer);
 
             image_transition(
                 device,
@@ -178,7 +193,7 @@ impl Engine {
 
             device
                 .queue_submit(
-                    self.configuration.graphics_queue,
+                    *self.configuration.graphics_queue,
                     &[submit_info],
                     current_frame_data.render_fence,
                 )
@@ -193,10 +208,18 @@ impl Engine {
 
             self.configuration
                 .swapchain_device
-                .queue_present(self.configuration.graphics_queue, &present_info)
+                .queue_present(*self.configuration.graphics_queue, &present_info)
                 .unwrap();
             self.current_frame = (self.current_frame + 1) % MAX_FRAMES as usize;
         }
+    }
+    
+    pub fn get_graphics_queue(&self) -> Arc<Queue> {
+        self.configuration.graphics_queue.clone()
+    }
+
+    pub fn get_surface(&self) -> Arc<SurfaceKHR> {
+        self.configuration.surface.clone()
     }
 
     pub fn cleanup(&self) {

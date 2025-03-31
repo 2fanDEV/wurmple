@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use ash::vk::{Extent2D, Format, Image, ImageView, Pipeline, RenderPass};
+use ash::vk::{
+    DescriptorSet, DescriptorSetLayout, Extent2D, Format, Image, ImageView, Pipeline, PipelineLayout, RenderPass
+};
 use ash::{
     ext::debug_utils,
     khr::surface,
@@ -8,22 +10,27 @@ use ash::{
     Entry,
 };
 use ash::{Device, Instance};
+use descriptor::DescriptorAllocator;
 use instance::{create_instance, load_vulkan_library};
 use swapchain::create_swapchain_image_and_views;
 use swapchain_support_details::SwapchainSupportDetails;
 use winit::window::Window;
 
 use super::allocated_image::AllocatedImage;
+use super::deletion_queue::DeletionQueue;
 
+mod compute_pipeline;
+mod descriptor;
 mod device;
+mod graphics_pipeline;
 mod instance;
-mod pipeline;
 mod renderpass;
 mod swapchain;
 mod swapchain_support_details;
 mod util;
 
 pub type SwapchainSupportDetail = SwapchainSupportDetails;
+pub type DescriptorAllocato = DescriptorAllocator;
 
 #[derive(Default, Clone, Copy)]
 pub struct QueueFamilyIndices {
@@ -83,7 +90,7 @@ pub fn create_device(
     instance: &Instance,
     surface_instance: &surface::Instance,
     surface: SurfaceKHR,
-    window: &Window
+    window: &Window,
 ) -> (PhysicalDevice, ash::Device) {
     let res = device::create_device(instance, &surface_instance, surface, window);
     match res.0 {
@@ -129,8 +136,13 @@ pub fn get_swapchain_support_details(
     surface: SurfaceKHR,
     window: &Window,
 ) -> SwapchainSupportDetails {
-    SwapchainSupportDetails::get_swapchain_support_details(physical_device, instance, surface, window)
-        .unwrap()
+    SwapchainSupportDetails::get_swapchain_support_details(
+        physical_device,
+        instance,
+        surface,
+        window,
+    )
+    .unwrap()
 }
 
 pub fn create_allocated_image(
@@ -138,14 +150,14 @@ pub fn create_allocated_image(
     swapchain_device: &ash::khr::swapchain::Device,
     swapchain_support_details: &SwapchainSupportDetails,
     swapchain: SwapchainKHR,
-    vma_allocator: Arc<vk_mem::Allocator>
+    vma_allocator: Arc<vk_mem::Allocator>,
 ) -> AllocatedImage {
     match swapchain::create_allocated_image(
         device,
         swapchain_device,
         swapchain_support_details,
         swapchain,
-        vma_allocator
+        vma_allocator,
     ) {
         Ok(allocated_image) => {
             return allocated_image;
@@ -154,20 +166,45 @@ pub fn create_allocated_image(
     }
 }
 
-pub fn create_image_views(device: &Device, swapchain_device: &ash::khr::swapchain::Device,
+pub fn create_image_views(
+    device: &Device,
+    swapchain_device: &ash::khr::swapchain::Device,
     swapchain_support_details: SwapchainSupportDetails,
-    swapchain: SwapchainKHR) -> (Vec<Image>, Vec<ImageView>){
-    create_swapchain_image_and_views(device, swapchain_device, swapchain_support_details, swapchain).unwrap()
+    swapchain: SwapchainKHR,
+) -> (Vec<Image>, Vec<ImageView>) {
+    create_swapchain_image_and_views(
+        device,
+        swapchain_device,
+        swapchain_support_details,
+        swapchain,
+    )
+    .unwrap()
 }
 
 pub fn create_graphics_pipelines(
-    device: &Device,
+    device: Arc<Device>,
     render_pass: &RenderPass,
     extent: &Extent2D,
 ) -> Vec<Pipeline> {
-    pipeline::create_graphics_pipeline(device, render_pass, extent).unwrap()
+    graphics_pipeline::create_graphics_pipeline(device, render_pass, extent).unwrap()
 }
 
 pub fn create_render_pass(device: &Device, format: &Format) -> RenderPass {
     renderpass::allocate_render_pass(&device, format).unwrap()
+}
+
+pub fn init_descriptors(
+    device: Arc<Device>,
+    allocated_image: Arc<AllocatedImage>,
+    deletion_queue: &mut DeletionQueue,
+) -> (Arc<DescriptorAllocator>, DescriptorSetLayout, DescriptorSet) {
+    descriptor::init_descriptors(device, allocated_image, deletion_queue).unwrap()
+}
+
+pub fn compute_pipeline(
+    device: Arc<Device>,
+    layouts: &[DescriptorSetLayout],
+    deletion_queue: &mut DeletionQueue,
+) -> (PipelineLayout, Pipeline) {
+    compute_pipeline::init_background_pipelines(device, layouts, deletion_queue).unwrap()
 }
