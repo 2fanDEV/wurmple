@@ -2,16 +2,16 @@ use std::{io::Error, sync::Arc};
 
 use allocated_image::AllocatedImage;
 use ash::vk::{
-    CommandBuffer, CommandBufferResetFlags, CommandBufferUsageFlags, Extent2D, Fence, ImageAspectFlags, ImageLayout, PipelineBindPoint, PipelineStageFlags, PresentInfoKHR, Queue, SubmitInfo, SurfaceKHR
+    CommandBuffer, CommandBufferResetFlags, CommandBufferUsageFlags, Extent2D, Fence, ImageLayout, PipelineBindPoint, PipelineStageFlags, PresentInfoKHR, Queue, SubmitInfo, SurfaceKHR
 };
 use command_buffers::{allocate_command_buffer, begin_command_buffer, create_command_pool};
 use configuration::{VkConfiguration, MAX_FRAMES};
 use data::FrameData;
-use image_ops::{image_subresource_range, image_transition};
+use egui_renderer::EGUIRenderer;
+use image_ops::image_transition;
 use sync_objects::{create_fence, create_semaphore};
 use winit::window::Window;
 
-use crate::egui_renderer::EGUIRenderer;
 mod allocated_image;
 mod command_buffers;
 mod components;
@@ -20,6 +20,8 @@ mod data;
 mod deletion_queue;
 mod image_ops;
 mod sync_objects;
+mod egui_renderer;
+mod ui;
 
 pub struct Engine {
     configuration: VkConfiguration,
@@ -52,6 +54,7 @@ impl Engine {
         }
 
         let egui_renderer = EGUIRenderer::new(
+            configuration.device.clone(),
             window,
             configuration.graphics_queue.clone(),
             configuration.surface.clone()
@@ -65,9 +68,6 @@ impl Engine {
     }
 
     fn draw_background(&self, image: Arc<AllocatedImage>, command_buffer: CommandBuffer) {
-        let image_subresource_range =
-            image_subresource_range(ImageAspectFlags::COLOR).layer_count(1);
-
         unsafe {
             self.configuration.device.cmd_bind_pipeline(
                 command_buffer,

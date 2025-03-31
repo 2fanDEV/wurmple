@@ -4,7 +4,7 @@ use winit::{
     window::{Window, WindowAttributes},
 };
 
-use crate::{egui_renderer::EGUIRenderer, engine::Engine};
+use crate::{engine::Engine};
 
 pub struct App {
     window: Option<Window>,
@@ -16,7 +16,6 @@ impl App {
         Self {
             window: None,
             engine: None,
-            egui_renderer: None,
         }
     }
 }

@@ -9,7 +9,6 @@ use ash::{
     Device,
 };
 
-use super::swapchain_support_details::{self, SwapchainSupportDetails};
 
 pub fn allocate_render_pass(device: &Device, format: &Format) -> Result<RenderPass, Error> {
     let color_attachment = create_attachment(*format);

@@ -26,6 +26,7 @@ mod graphics_pipeline;
 mod instance;
 mod renderpass;
 mod swapchain;
+mod egui_configuration;
 mod swapchain_support_details;
 mod util;
 
