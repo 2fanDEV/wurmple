@@ -2,12 +2,13 @@ use std::{io::Error, sync::Arc};
 
 use allocated_image::AllocatedImage;
 use ash::vk::{
-    CommandBuffer, CommandBufferResetFlags, CommandBufferUsageFlags, Extent2D, Fence, ImageLayout, PipelineBindPoint, PipelineStageFlags, PresentInfoKHR, Queue, SubmitInfo, SurfaceKHR
+    CommandBuffer, CommandBufferResetFlags, CommandBufferUsageFlags, Extent2D, Fence, ImageLayout,
+    PipelineBindPoint, PipelineStageFlags, PresentInfoKHR, Queue, SubmitInfo, SurfaceKHR,
 };
 use command_buffers::{allocate_command_buffer, begin_command_buffer, create_command_pool};
 use configuration::{VkConfiguration, MAX_FRAMES};
 use data::FrameData;
-use egui_renderer::EGUIRenderer;
+use egui_renderer::{ConfigurationParameter, EGUIRenderer};
 use image_ops::image_transition;
 use sync_objects::{create_fence, create_semaphore};
 use winit::window::Window;
@@ -18,9 +19,9 @@ mod components;
 mod configuration;
 mod data;
 mod deletion_queue;
+mod egui_renderer;
 mod image_ops;
 mod sync_objects;
-mod egui_renderer;
 mod ui;
 
 pub struct Engine {
@@ -54,16 +55,19 @@ impl Engine {
         }
 
         let egui_renderer = EGUIRenderer::new(
-            configuration.device.clone(),
-            window,
-            configuration.graphics_queue.clone(),
-            configuration.surface.clone()
+            ConfigurationParameter {
+                device: configuration.device.clone(),
+                window,
+                gfx_queue: configuration.graphics_queue.clone(),
+                surface: configuration.surface.clone(),
+            },
+            configuration.indices.graphics_q_idx.unwrap(),
         );
         Ok(Self {
             configuration,
             frame_data,
             current_frame,
-            egui_renderer
+            egui_renderer,
         })
     }
 
@@ -213,7 +217,7 @@ impl Engine {
             self.current_frame = (self.current_frame + 1) % MAX_FRAMES as usize;
         }
     }
-    
+
     pub fn get_graphics_queue(&self) -> Arc<Queue> {
         self.configuration.graphics_queue.clone()
     }

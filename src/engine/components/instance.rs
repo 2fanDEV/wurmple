@@ -8,10 +8,7 @@ use std::{
 use ash::{
     ext::debug_utils,
     vk::{
-        ApplicationInfo, DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
-        DebugUtilsMessengerCallbackDataEXT, DebugUtilsMessengerCreateInfoEXT,
-        DebugUtilsMessengerEXT, InstanceCreateFlags, InstanceCreateInfo, API_VERSION_1_2,
-        EXT_DEBUG_UTILS_NAME,
+        ApplicationInfo, DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT, DebugUtilsMessengerCallbackDataEXT, DebugUtilsMessengerCreateInfoEXT, DebugUtilsMessengerEXT, InstanceCreateFlags, InstanceCreateInfo, API_VERSION_1_2, API_VERSION_1_3, EXT_DEBUG_UTILS_NAME
     },
     Entry, Instance,
 };
@@ -31,7 +28,7 @@ pub fn create_instance(entry: &Entry, window: &Window) -> Result<Instance, Error
     let application_name = c"WURMPLE";
     let application_info = ApplicationInfo::default()
         .engine_name(engine_name)
-        .api_version(API_VERSION_1_2)
+        .api_version(API_VERSION_1_3)
         .application_name(application_name);
     let mut required_extensions =
         ash_window::enumerate_required_extensions(window.display_handle().unwrap().as_raw())

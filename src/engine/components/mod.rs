@@ -11,6 +11,7 @@ use ash::{
 };
 use ash::{Device, Instance};
 use descriptor::DescriptorAllocator;
+use egui_configuration::EGUIConfiguration;
 use instance::{create_instance, load_vulkan_library};
 use swapchain::create_swapchain_image_and_views;
 use swapchain_support_details::SwapchainSupportDetails;
@@ -32,6 +33,7 @@ mod util;
 
 pub type SwapchainSupportDetail = SwapchainSupportDetails;
 pub type DescriptorAllocato = DescriptorAllocator;
+pub type EGUIConfig = EGUIConfiguration;
 
 #[derive(Default, Clone, Copy)]
 pub struct QueueFamilyIndices {
@@ -209,3 +211,5 @@ pub fn compute_pipeline(
 ) -> (PipelineLayout, Pipeline) {
     compute_pipeline::init_background_pipelines(device, layouts, deletion_queue).unwrap()
 }
+
+
