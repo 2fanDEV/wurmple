@@ -3,10 +3,7 @@ use std::{io::Error, sync::Arc};
 use ash::{
     khr::{surface, swapchain},
     vk::{
-        ComponentMapping, ComponentSwizzle, CompositeAlphaFlagsKHR, Extent3D, Format, Image,
-        ImageAspectFlags, ImageSubresourceRange, ImageUsageFlags, ImageView, ImageViewCreateFlags,
-        ImageViewCreateInfo, ImageViewType, MemoryPropertyFlags, PhysicalDevice, SharingMode,
-        SurfaceKHR, SwapchainCreateInfoKHR, SwapchainKHR,
+        BufferCreateInfo, ComponentMapping, ComponentSwizzle, CompositeAlphaFlagsKHR, Extent3D, Format, Image, ImageAspectFlags, ImageSubresourceRange, ImageUsageFlags, ImageView, ImageViewCreateFlags, ImageViewCreateInfo, ImageViewType, MemoryPropertyFlags, PhysicalDevice, SharingMode, SurfaceKHR, SwapchainCreateInfoKHR, SwapchainKHR
     },
     Device, Instance,
 };
@@ -14,8 +11,7 @@ use vk_mem::{Alloc, MemoryUsage};
 use winit::window::{self, Window};
 
 use crate::engine::{
-    allocated_image::AllocatedImage,
-    image_ops::{image_create_info, image_subresource_range, image_view_create_info},
+    allocated_image::AllocatedImage, egui_renderer::RenderInformation, image_ops::{image_create_info, image_subresource_range, image_view_create_info}
 };
 
 use super::{

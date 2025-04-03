@@ -8,7 +8,7 @@ use ash::vk::{
 use command_buffers::{allocate_command_buffer, begin_command_buffer, create_command_pool};
 use configuration::{VkConfiguration, MAX_FRAMES};
 use data::FrameData;
-use egui_renderer::{ConfigurationParameter, EGUIRenderer};
+use egui_renderer::{ConfigurationParameter, EGUIRenderer, Renderer};
 use image_ops::image_transition;
 use sync_objects::{create_fence, create_semaphore};
 use winit::window::Window;
@@ -53,8 +53,7 @@ impl Engine {
                 fence,
             ));
         }
-
-        let egui_renderer = EGUIRenderer::new(
+        let mut egui_renderer = EGUIRenderer::new(
             ConfigurationParameter {
                 device: configuration.device.clone(),
                 window,
@@ -63,6 +62,8 @@ impl Engine {
             },
             configuration.indices.graphics_q_idx.unwrap(),
         );
+
+        egui_renderer.buffer_allocation(configuration.vma_allocator.clone(), configuration.extent);
         Ok(Self {
             configuration,
             frame_data,
@@ -171,6 +172,8 @@ impl Engine {
                 alloc_extent,
                 self.configuration.extent,
             );
+
+            self.egui_renderer.draw(self.configuration.allocated_image.clone());
 
             image_transition(
                 device,

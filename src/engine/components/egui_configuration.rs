@@ -1,20 +1,22 @@
 use std::sync::Arc;
 
 use ash::{
-    vk::{CommandBuffer, CommandPool, Format, Queue, RenderPass, SurfaceKHR},
+    vk::{Format, Queue, RenderPass, SurfaceKHR},
     Device,
 };
+use ash::vk::CommandPool;
+use ash::vk::CommandBuffer;
 use egui::Context;
 use winit::window::Window;
 
-use crate::engine::command_buffers;
 
 use super::renderpass;
 
 pub struct EGUIConfiguration {
-   pub _context: Context,
+   pub context: Context,
    pub egui_state: egui_winit::State,
    pub gfx_queue: Arc<Queue>,
+   pub gfx_queue_family_index: u32,
    surface: Arc<SurfaceKHR>,
    pub device: Arc<Device>,
    pub render_pass: RenderPass,
@@ -25,6 +27,7 @@ impl EGUIConfiguration {
         device: Arc<Device>,
         window: &Window,
         gfx_queue: Arc<Queue>,
+        gfx_queue_family_index: u32,
         surface: Arc<SurfaceKHR>,
     ) -> EGUIConfiguration {
         let context = egui::Context::default();
@@ -37,11 +40,12 @@ impl EGUIConfiguration {
             Some(2 * 1024),
         );
         let render_pass =
-            renderpass::allocate_render_pass(&device, &Format::R32G32B32A32_SFLOAT).unwrap();
+            renderpass::allocate_render_pass(&device, &Format::R16G16B16A16_SFLOAT).unwrap();
         Self {
-            _context: context,
+            context,
             egui_state,
             gfx_queue,
+            gfx_queue_family_index,
             surface,
             device,
             render_pass,
